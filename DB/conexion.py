@@ -5,10 +5,10 @@ from sqlalchemy.orm import sessionmaker
 # CONFIGURACIÓN DE LA BASE DE DATOS
 # =========================================================
 USER = "root"
-PASSWORD = ""
-HOST = "localhost"
-PORT = "3306"
-DATABASE = "taskly_db"
+PASSWORD = "RphoSsWuZpHuafsFPoAAaPNvJRSRRMhU"
+HOST = "mainline.proxy.rlwy.net"
+PORT = "14645"
+DATABASE = "railway"
 
 # =========================================================
 # URL DE CONEXIÓN PARA MYSQL CON PYMysql
