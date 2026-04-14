@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 
 from DB.conexion import SessionLocal
-from models.modelsDB import Materia, Usuario
+from models.modelsDB import Materia, Usuario, Tarea
 from modelsPydantic import modeloMateria
 
 routerMaterias = APIRouter()
@@ -61,6 +61,103 @@ def obtener_materia(id: int):
             "creado_en": str(materia.creado_en) if materia.creado_en else None,
             "actualizado_en": str(materia.actualizado_en) if materia.actualizado_en else None
         })
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+# -------------------------------------------------
+# 🔹 GET - Obtener materias por usuario
+# -------------------------------------------------
+@routerMaterias.get('/usuarios/{id_usuario}/materias', tags=['Materias'])
+def obtener_materias_por_usuario(id_usuario: int):
+    session = SessionLocal()
+    try:
+        usuario = session.query(Usuario).filter(
+            Usuario.id_usuario == id_usuario,
+            Usuario.eliminado == 0
+        ).first()
+
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        materias = session.query(Materia).filter(
+            Materia.id_usuario == id_usuario,
+            Materia.eliminado == 0
+        ).all()
+
+        resultado = []
+        for materia in materias:
+            resultado.append({
+                "id_materia": materia.id_materia,
+                "id_usuario": materia.id_usuario,
+                "nombre": materia.nombre,
+                "descripcion": materia.descripcion,
+                "color_hex": materia.color_hex,
+                "creado_en": str(materia.creado_en) if materia.creado_en else None,
+                "actualizado_en": str(materia.actualizado_en) if materia.actualizado_en else None
+            })
+
+        return JSONResponse(content=resultado)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+
+# -------------------------------------------------
+# 🔹 GET - Obtener resumen de materias por usuario
+# -------------------------------------------------
+@routerMaterias.get('/usuarios/{id_usuario}/materias/resumen', tags=['Materias'])
+def obtener_resumen_materias_por_usuario(id_usuario: int):
+    session = SessionLocal()
+    try:
+        usuario = session.query(Usuario).filter(
+            Usuario.id_usuario == id_usuario,
+            Usuario.eliminado == 0
+        ).first()
+
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+        materias = session.query(Materia).filter(
+            Materia.id_usuario == id_usuario,
+            Materia.eliminado == 0
+        ).all()
+
+        resultado = []
+        for materia in materias:
+            tareas = session.query(Tarea).filter(
+                Tarea.id_materia == materia.id_materia,
+                Tarea.eliminado == 0
+            ).all()
+
+            total_tareas = len(tareas)
+            pendientes = len([t for t in tareas if t.estado == "pendiente"])
+            completadas = len([t for t in tareas if t.estado == "completada"])
+
+            fechas_entrega = [t.fecha_entrega for t in tareas if t.fecha_entrega and t.estado == "pendiente"]
+            proxima_entrega = min(fechas_entrega) if fechas_entrega else None
+
+            resultado.append({
+                "id_materia": materia.id_materia,
+                "id_usuario": materia.id_usuario,
+                "nombre": materia.nombre,
+                "descripcion": materia.descripcion,
+                "color_hex": materia.color_hex,
+                "total_tareas": total_tareas,
+                "pendientes": pendientes,
+                "completadas": completadas,
+                "proxima_entrega": str(proxima_entrega) if proxima_entrega else None,
+                "creado_en": str(materia.creado_en) if materia.creado_en else None,
+                "actualizado_en": str(materia.actualizado_en) if materia.actualizado_en else None
+            })
+
+        return JSONResponse(content=resultado)
     except HTTPException as e:
         raise e
     except Exception as e:
